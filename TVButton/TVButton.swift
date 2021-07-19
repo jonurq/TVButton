@@ -13,7 +13,7 @@ Parallax Layer Object
 */
 public struct TVButtonLayer {
     /// UIImage to display. It is essential that all images have the same dimensions.
-    var internalImage: UIImage?
+    var internalView: UIView?
 }
 
 public extension TVButtonLayer {
@@ -21,8 +21,8 @@ public extension TVButtonLayer {
      Initialise the TVButton layer by passing a UIImage
      - Parameter image: UIImage to display. It is essential that all images have the same dimensions.
      */
-    public init(image: UIImage) {
-        self.init(internalImage: image)
+    public init(view: UIView) {
+        self.init(internalView: view)
     }
 }
 
@@ -51,12 +51,15 @@ open class TVButton: UIButton, UIGestureRecognizerDelegate {
             }
             // Instantiate an imageview with corners for every layer
             for layer in layers! {
-                let imageView = UIImageView(image: layer.internalImage)
-                imageView.layer.cornerRadius = cornerRadius
-                imageView.clipsToBounds = true
-                imageView.layer.needsDisplayOnBoundsChange = true
-                containerView.addSubview(imageView)
+                if let view = layer.internalView {
+                    view.layer.cornerRadius = cornerRadius
+                    view.clipsToBounds = true
+                    view.layer.needsDisplayOnBoundsChange = true
+                    containerView.addSubview(view)
+                    pinToSuperviewEdges(view: view, parentView: containerView)
+                }
             }
+            containerView.translatesAutoresizingMaskIntoConstraints = false
             // Add specular shine effect
             let frameworkBundle = Bundle(for: TVButton.self)
             let specularViewPath = frameworkBundle.path(forResource: "Specular", ofType: "png")
@@ -127,16 +130,25 @@ open class TVButton: UIButton, UIGestureRecognizerDelegate {
     func setup() {
         containerView.isUserInteractionEnabled = false
         self.addSubview(containerView)
+        self.translatesAutoresizingMaskIntoConstraints = false
+        pinToSuperviewEdges(view: containerView, parentView: self)
         containerView.clipsToBounds = true
         containerView.layer.cornerRadius = cornerRadius
         self.clipsToBounds = true
         specularView.alpha = 0.0
-        specularView.contentMode = UIViewContentMode.scaleAspectFill
+        specularView.contentMode = UIView.ContentMode.scaleAspectFill
         self.layer.shadowRadius = self.bounds.size.height/(2*shadowFactor)
         self.layer.shadowOffset = CGSize(width: 0.0, height: shadowFactor/3)
         self.layer.shadowOpacity = 0.5;
         tvButtonAnimation = TVButtonAnimation(button: self)
         self.addGestureRecognizers()
+    }
+    
+    func pinToSuperviewEdges(view: UIView, parentView: UIView) {
+        view.topAnchor.constraint(equalTo: parentView.topAnchor).isActive = true
+        view.bottomAnchor.constraint(equalTo: parentView.bottomAnchor).isActive = true
+        view.leadingAnchor.constraint(equalTo: parentView.leadingAnchor).isActive = true
+        view.trailingAnchor.constraint(equalTo: parentView.trailingAnchor).isActive = true
     }
     
     
@@ -160,7 +172,7 @@ open class TVButton: UIButton, UIGestureRecognizerDelegate {
      Pan gesture recognizer handler.
      - Parameter gestureRecognizer: TVButton's UIPanGestureRecognizer.
      */
-    func handlePan(_ gestureRecognizer: UIGestureRecognizer) {
+    @objc func handlePan(_ gestureRecognizer: UIGestureRecognizer) {
         self.gestureRecognizerDidUpdate(gestureRecognizer)
     }
     
@@ -168,7 +180,7 @@ open class TVButton: UIButton, UIGestureRecognizerDelegate {
      Long press gesture recognizer handler.
      - Parameter gestureRecognizer: TVButton's UILongPressGestureRecognizer.
      */
-    func handleLongPress(_ gestureRecognizer: UIGestureRecognizer) {
+    @objc func handleLongPress(_ gestureRecognizer: UIGestureRecognizer) {
         self.gestureRecognizerDidUpdate(gestureRecognizer)
     }
     
@@ -176,8 +188,8 @@ open class TVButton: UIButton, UIGestureRecognizerDelegate {
      Tap gesture recognizer handler. Sends TouchUpInside to super.
      - Parameter gestureRecognizer: TVButton's UITapGestureRecognizer.
      */
-    func handleTap(_ gestureRecognizer: UIGestureRecognizer) {
-        super.sendActions(for: UIControlEvents.touchUpInside)
+    @objc func handleTap(_ gestureRecognizer: UIGestureRecognizer) {
+        super.sendActions(for: UIControl.Event.touchUpInside)
     }
     
     /**

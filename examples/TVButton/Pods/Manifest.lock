@@ -1,0 +1,16 @@
+PODS:
+  - TVButton (1.0.0)
+
+DEPENDENCIES:
+  - TVButton (from `../..`)
+
+EXTERNAL SOURCES:
+  TVButton:
+    :path: "../.."
+
+SPEC CHECKSUMS:
+  TVButton: b068a1c5b2c47674429ac73ef6cc662ea8c6a8d2
+
+PODFILE CHECKSUM: 2e33d517bbf28c75307808659b3bd503a262b55f
+
+COCOAPODS: 1.10.1
