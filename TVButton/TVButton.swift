@@ -38,7 +38,6 @@ open class TVButton: UIButton, UIGestureRecognizerDelegate {
     
     internal var longPressGestureRecognizer: UILongPressGestureRecognizer?
     internal var panGestureRecognizer: UIPanGestureRecognizer?
-    internal var tapGestureRecognizer: UITapGestureRecognizer?
     
     // MARK: Public variables
     
@@ -103,7 +102,7 @@ open class TVButton: UIButton, UIGestureRecognizerDelegate {
         super.layoutSubviews()
         containerView.frame = self.bounds
         self.layer.masksToBounds = false;
-        let shadowPath = UIBezierPath(roundedRect: self.bounds, cornerRadius: cornerRadius)
+        let shadowPath = UIBezierPath(roundedRect: self.bounds, cornerRadius: 0)
         self.layer.shadowPath = shadowPath.cgPath
 
         // Stop here if animation is on
@@ -113,15 +112,7 @@ open class TVButton: UIButton, UIGestureRecognizerDelegate {
             }
         }
         
-        // Adjust size for every subview
-        for subview in containerView.subviews {
-            if subview == specularView {
-                subview.frame = CGRect(origin: subview.frame.origin, size: CGSize(width: specularScale * containerView.frame.size.width, height: specularScale * containerView.frame.size.height))
-            }
-            else {
-                subview.frame = CGRect(origin: subview.frame.origin, size: containerView.frame.size)
-            }
-        }
+        specularView.frame = CGRect(origin: specularView.frame.origin, size: CGSize(width: specularScale * containerView.frame.size.width, height: specularScale * containerView.frame.size.height))
     }
     
     /**
@@ -136,7 +127,7 @@ open class TVButton: UIButton, UIGestureRecognizerDelegate {
         containerView.layer.cornerRadius = cornerRadius
         self.clipsToBounds = true
         specularView.alpha = 0.0
-        specularView.contentMode = UIView.ContentMode.scaleAspectFill
+        specularView.contentMode = .scaleAspectFill
         self.layer.shadowRadius = self.bounds.size.height/(2*shadowFactor)
         self.layer.shadowOffset = CGSize(width: 0.0, height: shadowFactor/3)
         self.layer.shadowOpacity = 0.5;
@@ -161,8 +152,6 @@ open class TVButton: UIButton, UIGestureRecognizerDelegate {
         panGestureRecognizer = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
         panGestureRecognizer?.delegate = self
         self.addGestureRecognizer(panGestureRecognizer!)
-        tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
-        self.addGestureRecognizer(tapGestureRecognizer!)
         longPressGestureRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
         longPressGestureRecognizer?.delegate = self
         self.addGestureRecognizer(longPressGestureRecognizer!)
@@ -184,37 +173,28 @@ open class TVButton: UIButton, UIGestureRecognizerDelegate {
         self.gestureRecognizerDidUpdate(gestureRecognizer)
     }
     
-    /**
-     Tap gesture recognizer handler. Sends TouchUpInside to super.
-     - Parameter gestureRecognizer: TVButton's UITapGestureRecognizer.
-     */
-    @objc func handleTap(_ gestureRecognizer: UIGestureRecognizer) {
-        super.sendActions(for: UIControl.Event.touchUpInside)
-    }
     
     /**
      Determines button's reaction to gesturerecognizer.
      - Parameter gestureRecognizer: either UITapGestureRecognizer or UILongPressGestureRecognizer.
      */
     func gestureRecognizerDidUpdate(_ gestureRecognizer: UIGestureRecognizer){
-        if layers == nil {
+        guard let layers = layers,
+              layers.count > 0,
+              let animation = tvButtonAnimation else {
             return
         }
+        
         let point = gestureRecognizer.location(in: self)
-        if let animation = tvButtonAnimation {
-            if gestureRecognizer.state == .began {
-                animation.enterMovement()
-                animation.processMovement(point)
-            }
-            else if gestureRecognizer.state == .changed {
-                animation.processMovement(point)
-            }
-            else {
-                if gestureRecognizer.state == .began || gestureRecognizer.state == .changed {
-                    return
-                }
-                animation.exitMovement()
-            }
+        
+        switch gestureRecognizer.state {
+        case .began:
+            animation.enterMovement()
+            animation.processMovement(point)
+        case .changed:
+            animation.processMovement(point)
+        default:
+            animation.exitMovement()
         }
     }
     

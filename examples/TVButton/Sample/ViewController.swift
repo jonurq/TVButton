@@ -32,6 +32,12 @@ class ViewController: UIViewController {
             //TVButtonLayer(view: viewFromImage(image: UIImage(named: "TVButtonTop.png")!))
         
         tvButton.layers = [background, pattern, top]
+        
+        tvButton.addTarget(self, action: #selector(handleTap(_ :)), for: .touchUpInside)
+    }
+    
+    @objc func handleTap(_ sender: Any) {
+        print("Touched")
     }
 
     override func didReceiveMemoryWarning() {
