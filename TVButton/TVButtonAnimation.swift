@@ -59,7 +59,7 @@ internal class TVButtonAnimation {
     }
     
     // Movement continues
-    func processMovement(_ attitude: CMAttitude){
+    func processMovement(_ data: CMDeviceMotion){
         guard highlightMode, let tvButton = button else { return }
         
 //        let offsetX = point.x / tvButton.bounds.size.width
@@ -77,10 +77,29 @@ internal class TVButtonAnimation {
         //let xTranslation = (-2*point.x/tvButton.bounds.size.width)*maxTranslationX
         //let yTranslation = (-2*point.y/tvButton.bounds.size.height)*maxTranslationY
         
+        let maxRotationAngle = 3.14159
+        let maxCardRotationAngle = 0.174533
         
-        let pitch = attitude.pitch > 0 ? min(attitude.pitch, 0.261799) : max(attitude.pitch, -0.261799)
-        let roll = attitude.roll > 0 ? min(attitude.roll, 0.261799) : max(attitude.roll, -0.261799)
-        let yaw = attitude.yaw > 0 ? min(attitude.yaw, 0.261799) : max(attitude.yaw, -0.261799)
+        
+        
+        
+        var pitch = data.attitude.pitch > 0 ? min(data.attitude.pitch, maxRotationAngle) : max(data.attitude.pitch, -maxRotationAngle)
+        var roll = data.attitude.roll > 0 ? min(data.attitude.roll, maxRotationAngle) : max(data.attitude.roll, -maxRotationAngle)
+        var yaw = data.attitude.yaw > 0 ? min(data.attitude.yaw, maxRotationAngle) : max(data.attitude.yaw, -maxRotationAngle)
+        
+        pitch = easeOutQuart(abs(pitch / maxRotationAngle)) * (abs(pitch) / pitch)
+        roll = easeOutQuart(abs(roll / maxRotationAngle)) * (abs(roll) / roll)
+        yaw = easeOutQuart(abs(yaw / maxRotationAngle)) * (abs(yaw) / yaw)
+        
+        
+        
+        pitch *= maxCardRotationAngle
+        roll *= maxCardRotationAngle
+        yaw *= maxCardRotationAngle
+        
+        print("roll: \(roll), pitch: \(pitch), yaw:\(yaw)")
+        
+        
         
         let xRotateTransform = CATransform3DMakeRotation(-CGFloat(pitch), 1, 0, 0)
         let yRotateTransform = CATransform3DMakeRotation(CGFloat(roll), 0, 1, 0)
@@ -95,8 +114,15 @@ internal class TVButtonAnimation {
         
         //let combinedTransform = CATransform3DConcat(combinedRotateTranslateTransform, targetScaleTransform)
         
+        var rotationAndPerspectiveTransform = CATransform3DIdentity
+        rotationAndPerspectiveTransform.m34 = 1.0 / -500; // apply the perspective
+        rotationAndPerspectiveTransform = CATransform3DRotate(rotationAndPerspectiveTransform, -CGFloat(pitch), 1.0, 0.0, 0.0);
+        rotationAndPerspectiveTransform = CATransform3DRotate(rotationAndPerspectiveTransform, CGFloat(roll), 0.0, 1.0, 0.0);
+   
+        
+   
         UIView.animate(withDuration: animationDuration, delay: 0.0, options: UIView.AnimationOptions.curveEaseOut, animations: { () -> Void in
-            tvButton.layer.transform = combinedRotateTransformXYZ
+            tvButton.layer.transform = rotationAndPerspectiveTransform //combinedRotateTransformXYZ
             tvButton.specularView.alpha = specularAlpha
             //tvButton.specularView.center = point
             for i in 1 ..< tvButton.containerView.subviews.count {
@@ -120,6 +146,10 @@ internal class TVButtonAnimation {
 //                }
 //            }
 //        }, completion: nil)
+    }
+    
+    func easeOutQuart(_ x: Double) -> Double {
+        return 1 - pow(1 - x, 4)
     }
     
     // Movement ends
@@ -182,9 +212,7 @@ internal class TVButtonAnimation {
                 
                 
                 
-                self.processMovement(data.attitude)
-
-                print("roll: \(roll), pitch: \(pitch), yaw:\(yaw)")
+                self.processMovement(data)
             }
         }
     }
