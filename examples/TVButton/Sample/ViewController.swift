@@ -36,6 +36,8 @@ class ViewController: UIViewController {
         tvButton.addTarget(self, action: #selector(handleTap(_ :)), for: .touchUpInside)
     }
     
+    
+    
     @objc func handleTap(_ sender: Any) {
         print("Touched")
     }
@@ -58,5 +60,8 @@ class ViewController: UIViewController {
         return view
     }
 
+    func radiansToDegree(_ value: Double) -> Double {
+        return value * 180.0 / Double.pi
+    }
 }
 

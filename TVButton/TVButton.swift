@@ -132,7 +132,8 @@ open class TVButton: UIButton, UIGestureRecognizerDelegate {
         self.layer.shadowOffset = CGSize(width: 0.0, height: shadowFactor/3)
         self.layer.shadowOpacity = 0.5;
         tvButtonAnimation = TVButtonAnimation(button: self)
-        self.addGestureRecognizers()
+        tvButtonAnimation?.startGyro()
+        //self.addGestureRecognizers()
     }
     
     func pinToSuperviewEdges(view: UIView, parentView: UIView) {
@@ -187,15 +188,15 @@ open class TVButton: UIButton, UIGestureRecognizerDelegate {
         
         let point = gestureRecognizer.location(in: self)
         
-        switch gestureRecognizer.state {
-        case .began:
-            animation.enterMovement()
-            animation.processMovement(point)
-        case .changed:
-            animation.processMovement(point)
-        default:
-            animation.exitMovement()
-        }
+//        switch gestureRecognizer.state {
+//        case .began:
+//            animation.enterMovement()
+//            animation.processMovement(point)
+//        case .changed:
+//            animation.processMovement(point)
+//        default:
+//            animation.exitMovement()
+//        }
     }
     
     // MARK: UIGestureRecognizerDelegate

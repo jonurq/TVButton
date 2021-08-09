@@ -7,13 +7,17 @@
 //
 
 import Foundation
+import CoreMotion
 
 /**
 TVButtonAnimation class
  */
 internal class TVButtonAnimation {
     
-    var highlightMode = false
+    let motion = CMMotionManager()
+    
+    
+    var highlightMode = true
     weak var button: TVButton?
 
     init(button: TVButton) {
@@ -55,41 +59,46 @@ internal class TVButtonAnimation {
     }
     
     // Movement continues
-    func processMovement(_ point: CGPoint){
+    func processMovement(_ attitude: CMAttitude){
         guard highlightMode, let tvButton = button else { return }
         
-        let offsetX = point.x / tvButton.bounds.size.width
-        let offsetY = point.y / tvButton.bounds.size.height
-        let dx = point.x - tvButton.bounds.size.width/2
-        let dy = point.y - tvButton.bounds.size.height/2
+//        let offsetX = point.x / tvButton.bounds.size.width
+//        let offsetY = point.y / tvButton.bounds.size.height
+//        let dx = point.x - tvButton.bounds.size.width/2
+//        let dy = point.y - tvButton.bounds.size.height/2
+
+        //print("oX: \(offsetX), oY: \(offsetY)")
+        //print("dX: \(dx), dY: \(dy)")
         
-        print("oX: \(offsetX), oY: \(offsetY)")
-        print("dX: \(dx), dY: \(dy)")
+//        let xRotation = (dy - offsetY)*(rotateXFactor/tvButton.bounds.size.width)
+//        let yRotation = (offsetX - dx)*(rotateYFactor/tvButton.bounds.size.width)
+//        let zRotation = (xRotation + yRotation)/rotateZFactor
         
-        let xRotation = (dy - offsetY)*(rotateXFactor/tvButton.bounds.size.width)
-        let yRotation = (offsetX - dx)*(rotateYFactor/tvButton.bounds.size.width)
-        let zRotation = (xRotation + yRotation)/rotateZFactor
+        //let xTranslation = (-2*point.x/tvButton.bounds.size.width)*maxTranslationX
+        //let yTranslation = (-2*point.y/tvButton.bounds.size.height)*maxTranslationY
         
-        let xTranslation = (-2*point.x/tvButton.bounds.size.width)*maxTranslationX
-        let yTranslation = (-2*point.y/tvButton.bounds.size.height)*maxTranslationY
         
-        let xRotateTransform = CATransform3DMakeRotation(degreesToRadians(xRotation), 1, 0, 0)
-        let yRotateTransform = CATransform3DMakeRotation(degreesToRadians(yRotation), 0, 1, 0)
-        let zRotateTransform = CATransform3DMakeRotation(degreesToRadians(zRotation), 0, 0, 1)
+        let pitch = attitude.pitch > 0 ? min(attitude.pitch, 0.261799) : max(attitude.pitch, -0.261799)
+        let roll = attitude.roll > 0 ? min(attitude.roll, 0.261799) : max(attitude.roll, -0.261799)
+        let yaw = attitude.yaw > 0 ? min(attitude.yaw, 0.261799) : max(attitude.yaw, -0.261799)
+        
+        let xRotateTransform = CATransform3DMakeRotation(-CGFloat(pitch), 1, 0, 0)
+        let yRotateTransform = CATransform3DMakeRotation(CGFloat(roll), 0, 1, 0)
+        let zRotateTransform = CATransform3DMakeRotation(-CGFloat(yaw), 0, 0, 0)
         
         let combinedRotateTransformXY = CATransform3DConcat(xRotateTransform, yRotateTransform)
         let combinedRotateTransformXYZ = CATransform3DConcat(combinedRotateTransformXY, zRotateTransform)
-        let translationTransform = CATransform3DMakeTranslation(-xTranslation, yTranslation, 0.0)
-        let combinedRotateTranslateTransform = CATransform3DConcat(combinedRotateTransformXYZ, translationTransform)
+        //let translationTransform = CATransform3DMakeTranslation(-xTranslation, yTranslation, 0.0)
+        //let combinedRotateTranslateTransform = CATransform3DConcat(combinedRotateTransformXYZ, translationTransform)
         
-        let targetScaleTransform = CATransform3DMakeScale(highlightedScale, highlightedScale, highlightedScale)
+        //let targetScaleTransform = CATransform3DMakeScale(highlightedScale, highlightedScale, highlightedScale)
         
-        let combinedTransform = CATransform3DConcat(combinedRotateTranslateTransform, targetScaleTransform)
+        //let combinedTransform = CATransform3DConcat(combinedRotateTranslateTransform, targetScaleTransform)
         
         UIView.animate(withDuration: animationDuration, delay: 0.0, options: UIView.AnimationOptions.curveEaseOut, animations: { () -> Void in
-            tvButton.layer.transform = combinedTransform
+            tvButton.layer.transform = combinedRotateTransformXYZ
             tvButton.specularView.alpha = specularAlpha
-            tvButton.specularView.center = point
+            //tvButton.specularView.center = point
             for i in 1 ..< tvButton.containerView.subviews.count {
                 let adjusted = i/2
                 let scale = 1 + maxScaleDelta*CGFloat(adjusted/tvButton.containerView.subviews.count)
@@ -101,16 +110,16 @@ internal class TVButtonAnimation {
             }
 
             }, completion: nil)
-        UIView.animate(withDuration: 0.16, delay: 0.0, options: UIView.AnimationOptions.curveEaseOut, animations: { () -> Void in
-            for i in 1 ..< tvButton.containerView.subviews.count {
-                let subview = tvButton.containerView.subviews[i]
-                let xParallax = tvButton.parallaxIntensity*parallaxIntensityXFactor
-                let yParallax = tvButton.parallaxIntensity*parallaxIntensityYFactor
-                if subview != tvButton.specularView {
-                    subview.center = CGPoint(x: tvButton.bounds.size.width/2 + xTranslation*CGFloat(i)*xParallax, y: tvButton.bounds.size.height/2 + yTranslation*CGFloat(i)*0.3*yParallax)
-                }
-            }
-        }, completion: nil)
+//        UIView.animate(withDuration: 0.16, delay: 0.0, options: UIView.AnimationOptions.curveEaseOut, animations: { () -> Void in
+//            for i in 1 ..< tvButton.containerView.subviews.count {
+//                let subview = tvButton.containerView.subviews[i]
+//                let xParallax = tvButton.parallaxIntensity*parallaxIntensityXFactor
+//                let yParallax = tvButton.parallaxIntensity*parallaxIntensityYFactor
+//                if subview != tvButton.specularView {
+//                    subview.center = CGPoint(x: tvButton.bounds.size.width/2 + xTranslation*CGFloat(i)*xParallax, y: tvButton.bounds.size.height/2 + yTranslation*CGFloat(i)*0.3*yParallax)
+//                }
+//            }
+//        }, completion: nil)
     }
     
     // Movement ends
@@ -157,6 +166,34 @@ internal class TVButtonAnimation {
     
     func degreesToRadians(_ value:CGFloat) -> CGFloat {
         return value * CGFloat(Double.pi) / 180.0
+    }
+    
+    func startGyro() {
+        if motion.isGyroAvailable {
+            motion.gyroUpdateInterval = 1.0 / 2.0
+            motion.startDeviceMotionUpdates(to: OperationQueue.main) {[weak self] data, error in
+                guard let data = data, let self = self else {
+                    print(error)
+                    return
+                }
+                let roll = data.attitude.roll
+                let pitch = data.attitude.pitch
+                let yaw = data.attitude.yaw
+                
+                
+                
+                self.processMovement(data.attitude)
+
+                print("roll: \(roll), pitch: \(pitch), yaw:\(yaw)")
+            }
+        }
+    }
+    
+    
+    func stopGyros() {
+        if motion.isGyroActive {
+            motion.stopGyroUpdates()
+        }
     }
 
 }
